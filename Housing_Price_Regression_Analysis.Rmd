@@ -1,0 +1,206 @@
+---
+title: "Housing Price Regression Analysis"
+author: "Kat Chu"
+date: "November 2025"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+## Overview
+
+This analysis explores the relationship between housing characteristics and sale price using a dataset of residential properties. The project begins with a simple linear regression model using area as the sole predictor, then builds toward a multiple regression model incorporating structural and categorical features. Model performance is evaluated using R², MSE, RMSE, residual analysis, and ANOVA comparison.
+
+---
+
+```{r load}
+# Load necessary libraries
+library(readr)
+
+# Read the CSV
+housing <- read.csv("housing.csv")
+
+# Peek at the data
+str(housing)
+summary(housing)
+```
+
+---
+
+## 1. Simple Linear Regression: Area as a Predictor of Price
+
+```{r linearmodel}
+# Simple linear regression model: area predicts price
+# Dependent variable: price
+# Independent variable: area (square footage)
+
+model1 <- lm(price ~ area, data = housing)
+summary(model1)
+
+# Calculate residuals
+model1_resid <- residuals(model1)
+
+# Calculate MSE (Mean Squared Error)
+mse1 <- mean(model1_resid^2)
+mse1
+
+# Calculate RMSE (Root Mean Squared Error)
+rmse1 <- sqrt(mse1)
+rmse1
+```
+
+### Results:
+
+This model uses area (square footage) as the sole predictor of sale price.
+
+- **R² = 0.2873**: Area explains approximately 28.7% of the variation in price, indicating a modest but meaningful relationship.
+- **Adjusted R² = 0.286**: Nearly identical to R² given the single predictor, confirming the result is not artificially inflated.
+- **MSE = 2.49e+12**: The average squared prediction error is large due to the scale of prices in the dataset.
+- **RMSE = 1,577,613**: On average, the model's predictions deviate from actual sale prices by approximately $1.58 million, suggesting that area alone is insufficient for accurate price prediction.
+
+While a positive relationship exists between size and price, the model's limited explanatory power indicates that additional variables are needed to capture the full complexity of housing prices.
+
+---
+
+## 2. Residual Analysis: Simple Linear Regression
+
+```{r residuals-plot}
+# Plot residuals to check for patterns (should be randomly scattered around 0)
+plot(residuals(model1),
+     main = "Residuals Plot - Simple Linear Regression",
+     ylab = "Residuals",
+     xlab = "Index",
+     pch = 19, col = "blue")
+
+abline(h = 0, col = "red", lwd = 2)
+```
+
+### Interpretation:
+
+The residuals do not appear randomly scattered around zero. Instead, a discernible pattern emerges — residuals start high, flatten in the middle, and decline toward the end. This systematic trend suggests the relationship between area and price may not be strictly linear and indicates that a more complex model with additional predictors would better fit the data.
+
+---
+
+## 3. Normality Check: QQ Plot
+
+```{r qq-plot}
+# QQ plot to assess normality of residuals
+qqnorm(residuals(model1))
+qqline(residuals(model1), col = "red", lwd = 2)
+```
+
+### Interpretation:
+
+The QQ plot shows that residuals follow the theoretical normal distribution reasonably well between quantiles -3 and 1. However, the upper tail deviates noticeably above the line, indicating the model underpredicts prices for higher-value properties. The residuals are approximately normal, but not perfectly so, which is consistent with the limitations of a single-predictor model applied to a right-skewed price distribution.
+
+---
+
+## 4. Multiple Linear Regression: Adding Structural and Categorical Predictors
+
+```{r model2}
+# Convert categorical variables to factors
+housing$mainroad <- as.factor(housing$mainroad)
+housing$guestroom <- as.factor(housing$guestroom)
+housing$basement <- as.factor(housing$basement)
+housing$hotwaterheating <- as.factor(housing$hotwaterheating)
+housing$airconditioning <- as.factor(housing$airconditioning)
+housing$prefarea <- as.factor(housing$prefarea)
+housing$furnishingstatus <- as.factor(housing$furnishingstatus)
+
+# Build the multiple regression model
+model2 <- lm(price ~ area + bedrooms + bathrooms + stories + mainroad +
+               guestroom + basement + hotwaterheating + airconditioning +
+               parking + prefarea + furnishingstatus, data = housing)
+
+summary(model2)
+```
+
+### Variable Selection Rationale:
+
+The following predictors were included based on their theoretical relevance to housing price:
+
+- **Area**: Larger homes generally command higher prices.
+- **Bedrooms / Bathrooms / Stories**: Additional rooms and levels increase functional value.
+- **Main Road Access**: Proximity to main roads may affect accessibility and desirability.
+- **Guest Room / Basement**: Additional space and utility features tend to increase value.
+- **Hot Water Heating**: Indicative of higher-end amenities.
+- **Air Conditioning**: Commonly associated with higher-priced properties.
+- **Parking**: Greater parking availability adds convenience and value.
+- **Preferred Area**: Location in a preferred neighborhood typically commands a price premium.
+- **Furnishing Status**: Furnished and semi-furnished homes may attract buyers willing to pay more.
+
+### Results:
+
+- **Adjusted R² = 0.674**: The multiple regression model explains approximately 67.4% of price variation, a substantial improvement over the simple model (28.6%).
+- Most predictors including area, bathrooms, stories, main road access, basement, air conditioning, and preferred area are statistically significant (p < 0.05).
+- Bedrooms was not statistically significant (p = 0.11), likely due to collinearity with other size-related variables.
+- Unfurnished status shows a negative coefficient, indicating lower sale prices relative to furnished properties.
+
+---
+
+## 5. Residual Analysis: Multiple Linear Regression
+
+```{r res}
+# Residual plot for Model 2
+plot(resid(model2),
+     main = "Residual Plot - Multiple Linear Regression",
+     ylab = "Residuals",
+     xlab = "Index")
+abline(h = 0, col = "red")
+```
+
+### Interpretation:
+
+Residuals in the multiple regression model are more randomly distributed around zero compared to the simple model. While minor patterns remain, the overall scatter is more consistent, indicating improved model fit and more reliable predictions across the range of housing prices.
+
+---
+
+## 6. Normality Check: QQ Plot for Multiple Regression
+
+```{r qq}
+# QQ Plot of residuals for Model 2
+qqnorm(resid(model2), main = "QQ Plot of Residuals - Multiple Linear Regression")
+qqline(resid(model2), col = "blue")
+```
+
+### Interpretation:
+
+The QQ plot for the multiple regression model shows residuals closely following the normal line through most of the distribution. Minor deviations appear in both tails, but overall the normality assumption is reasonably satisfied, making the model's inferential results reliable.
+
+---
+
+## 7. Model Comparison
+
+```{r compare}
+# Calculate MSE and RMSE for both models
+mse_model1 <- mean(residuals(model1)^2)
+rmse_model1 <- sqrt(mse_model1)
+
+mse_model2 <- mean(residuals(model2)^2)
+rmse_model2 <- sqrt(mse_model2)
+
+# Print results
+cat("Model 1 - MSE:", mse_model1, "| RMSE:", rmse_model1, "\n")
+cat("Model 2 - MSE:", mse_model2, "| RMSE:", rmse_model2, "\n")
+
+# ANOVA comparison
+anova(model1, model2)
+```
+
+### Summary of Findings:
+
+| Metric | Simple Regression | Multiple Regression |
+|--------|-------------------|---------------------|
+| R² | 0.287 | 0.674 |
+| RMSE | ~$1,577,613 | ~$1,050,000 |
+| MSE | 2.49e+12 | 1.11e+12 |
+
+The multiple regression model significantly outperforms the simple model across all evaluation metrics. RMSE decreased from approximately $1.58 million to $1.05 million, and R² more than doubled. The ANOVA comparison returned a p-value < 2.2e-16 with an F-statistic of 54.86, confirming that the addition of structural and categorical predictors results in a statistically significant improvement in model performance.
+
+---
+
+## Conclusion
+
+This analysis demonstrates the value of incorporating multiple predictors in regression modeling. While area alone provides a starting point for price prediction, the inclusion of structural features, amenities, and location variables substantially improves explanatory power. Future work could explore feature engineering, interaction terms, or non-linear modeling approaches to further improve prediction accuracy.

@@ -122,7 +122,7 @@ Expanded the model to include structural, amenity, and location variables.
 
 ### Step 7 — Model Comparison
 
-![Model Comparison](Images/model_comparison.png)
+![Model Comparison](Images/model1_comparison.png)
 
 ---
 

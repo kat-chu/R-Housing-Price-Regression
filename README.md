@@ -151,11 +151,3 @@ Expanded the model to include structural, amenity, and location variables.
 
 This project was completed as part of **DSC520 — Statistics for Data Science** at Bellevue University. It demonstrates applied statistical modeling, model evaluation, and data interpretation in R.
 
----
-
-## Author
-
-**Kat Chu**
-- [LinkedIn](https://www.linkedin.com/in/kat-chu/)
-- [GitHub](https://github.com/kat-chu)
-
